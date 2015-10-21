@@ -12,6 +12,8 @@
 #include <limits>
 #include <chrono>
 #include <set>
+#include <cassert>
+#include <random>
 
 std::vector<std::vector<int32_t> > C;
 std::vector<std::pair<float,float> > V;
@@ -69,6 +71,16 @@ int64_t Distance() {
         c = T[c];
     } while (c != 0);
     return t;
+}
+
+bool IsTour() {
+    int16_t c = 0;
+    int16_t t = 0;
+    do {
+        t++;
+        c = T[c];
+    } while (c != 0);
+    return t==N;
 }
 
 std::pair<int16_t, int16_t> Edge(int16_t x, int16_t y){
@@ -129,11 +141,85 @@ void LKOpt(int16_t s) {
     T = optT;
 }
 
+int64_t TwoOpt(int16_t s) {
+    int64_t change = 0;
+    int16_t o = -1;
+    for (int64_t i = 0; i < N; i++) {
+        if (i == s || i == T[s]) continue;
+        if (C[s][T[s]]+C[i][T[i]]-C[s][i]-C[T[s]][T[i]] > change) {
+            change = C[s][T[s]]+C[i][T[i]]-C[s][i]-C[T[s]][T[i]];
+            o = i;
+        }
+    }
+    if (o != -1) {
+        int16_t pto = T[o];
+        ReverseTour(T[s], o);
+        T[T[s]] = pto;
+        T[s] = o;
+        //assert(IsTour());
+    }
+    return change;
+}
+
+bool Order(int16_t s1, int16_t s2, int16_t s3) {
+    while (s1 != s3) {
+        s1 = T[s1];
+        if (s1 == s2)
+            return true;
+    }
+    return false;
+}
+
+bool ThreeOpt(int16_t s1, int16_t s2) {
+    if (s1 == s2 || s1 == T[s2] || s2 == T[s1]) return false;
+    for (int64_t s3 = T[T[s2]]; s3 != s1; s3 = T[s3]) {
+        //assert(Order(s1, s2, s3));
+        if (s3 == s1 || s3 == T[s1] || s3 == s2 || s3 == T[s2]) continue;
+        if (C[s1][T[s1]]+C[s2][T[s2]]+C[s3][T[s3]] > C[s1][T[s2]]+C[s3][T[s1]]+C[s2][T[s3]]) {
+            int16_t pt1 = T[s1], pt3 = T[s3];
+            T[s1] = T[s2];
+            T[s3] = pt1;
+            T[s2] = pt3;
+            //assert(IsTour());
+            return true;
+        }
+        if (C[s1][T[s1]]+C[s2][T[s2]]+C[s3][T[s3]] > C[s1][s3]+C[T[s2]][T[s1]]+C[s2][T[s3]]) {
+            int16_t pt1 = T[s1], pt3 = T[s3];
+            T[s1] = s3;
+            ReverseTour(T[s2], s3);
+            T[T[s2]] = pt1;
+            T[s2] = pt3;
+            //assert(IsTour());
+            return true;
+        }
+    }
+    return false;
+}
+
 void LocalOpt() {
-    int16_t s = 0;
+    int16_t s1 = 0, s2 = 0;
+    int64_t change = 0;
     while ((Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
-        LKOpt(s);
-        ++s %= N;
+        change += TwoOpt(s1++);
+        if (s1 == N) {
+            if (change == 0) break;
+            change = s1 = 0;
+        }
+    }
+    s1 = 0;
+    s2 = T[T[s1]];
+    std::cout << Distance() << std::endl;
+    while ((Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+        if (ThreeOpt(s1, s2)) {
+            //s1 = T[s1];
+            s2 = T[T[s1]];
+        }
+        else
+            s2 = T[s2];
+        if (s2 == s1) {
+            s1 = T[s1];
+            s2 = T[T[s1]];
+        }
     }
     
 }
@@ -161,10 +247,28 @@ void InitialTour() {
     }
 }
 
+void RandomInput() {
+    N = 200;
+    C = std::vector<std::vector<int32_t>>(N,std::vector<int32_t>(N,0));
+    T = std::vector<int16_t>(N,-1);
+    for (int i = 0; i < N; i++) {
+        float x,y;
+        std::random_device rd;
+        std::uniform_int_distribution<float> dist(.0f, 10e6);
+        x = dist(rd);
+        y = dist(rd);
+        V.push_back(std::make_pair(x, y));
+    }
+}
+
 int main(int argc, const char * argv[]) {
-    ReadInput();
+    RandomInput();
+    //ReadInput();
+    //Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
     CalculateC();
     InitialTour();
+    std::cout << Distance() << std::endl;
     LocalOpt();
+    std::cout << Distance() << std::endl;
     WriteOutput();
 }
