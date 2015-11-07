@@ -366,10 +366,10 @@ void LocalCycOpt() {
         if (s2 == N) {
             s1++;
             s2 = 0;
-        }
-        if (s1 == N) {
-            if (change == 0) break;
-            change = s1 = 0;
+            if (s1 == N) {
+                if (change == 0) break;
+                change = s1 = 0;
+            }
         }
     }
     std::vector<std::vector<bool>> nn(N,std::vector<bool>(N,false));
@@ -390,10 +390,10 @@ void LocalCycOpt() {
         if (++s2 == N) {
             s1++;
             s2 = 0;
-        }
-        if (s1 == N) {
-            if (change == 0) break;
-            change = s1 = 0;
+            if (s1 == N) {
+                if (change == 0) break;
+                change = s1 = 0;
+            }
         }
     }
 }
