@@ -8,6 +8,9 @@
 
 #include <iostream>
 #include <vector>
+#include <list>
+#include <set>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <chrono>
@@ -19,6 +22,209 @@ std::vector<std::vector<int32_t> > C;
 std::vector<std::pair<float,float> > V;
 std::vector<int16_t> T;
 int16_t N;
+
+struct edge_t {
+    int16_t _n1, _n2;
+    edge_t(int16_t n1, int16_t n2) :_n1((n1<n2)?n1:n2), _n2((n1<n2)?n2:n1) {}
+    int16_t other(int16_t o) const {
+        assert(_n1==o || _n2 == o);
+        return (_n1 == o)?_n2:_n1;
+    }
+};
+inline bool operator==(const edge_t& lhs, const edge_t& rhs){
+    return (lhs._n1 == rhs._n1 && lhs._n2 == rhs._n2);
+}
+inline bool operator!=(const edge_t& lhs, const edge_t& rhs){return !(lhs == rhs);}
+inline bool operator<(const edge_t& lhs, const edge_t& rhs){return lhs._n1 < rhs._n1;}
+
+std::ostream& operator<<(std::ostream& os, const edge_t& e) {
+    os << "(" << e._n1 << "--" << e._n2 << ")";
+    return os;
+}
+
+struct node_t {
+    int16_t _in, _out, _order;
+    node_t(int16_t in = -1, int16_t out = -1, int16_t order = -1)
+    : _in(in) , _out(out), _order(order) {}
+    void swap(int16_t o = -1) { std::swap(_in, _out); _order = o; }
+};
+
+std::ostream& operator<<(std::ostream& os, const node_t& n) {
+    os << "(" << n._in << "->x->" << n._out << ")@" << n._order;
+    return os;
+}
+
+struct cycle_t {
+    std::vector<node_t> _nodes;
+    int16_t _n;
+    cycle_t(int16_t n = 0): _n(n), _nodes(std::vector<node_t>(n)) {}
+    void fixOrder() {
+        int i, o;
+        i = o = 0;
+        do {
+            _nodes[i]._order = o++;
+            i = _nodes[i]._out;
+        } while(i != 0);
+    }
+    int64_t distance() {
+        int64_t d = 0;
+        for (int i = 0; i < _n; i++) {
+            d += C[_nodes[i]._out][i];
+        }
+        return d;
+    }
+    int32_t distance(int16_t n) {
+        return C[n][_nodes[n]._out];
+    }
+    void order(int16_t from, int16_t to, int16_t order) {
+        while (from != to) {
+            _nodes[from]._order = (order++ % _n);
+            from = _nodes[from]._out;
+        }
+    }
+    void reverse(int16_t from, int16_t to, int16_t order) {
+        while (from != to) {
+            _nodes[from].swap(order++ % _n);
+            from = _nodes[from]._out;
+        }
+    }
+    int32_t optGain2(int16_t n1,int16_t n2) {
+        return distance(n1)+distance(n2)-C[n1][n2]-C[_nodes[n1]._out][_nodes[n2]._out];
+    }
+    int32_t optGain3a(int16_t n1,int16_t n2,int16_t n3) {
+        return distance(n1)+distance(n2)+distance(n3)
+        -C[n1][_nodes[n2]._out]
+        -C[n3][_nodes[n1]._out]
+        -C[n2][_nodes[n3]._out];
+    }
+    int32_t optGain3b(int16_t n1,int16_t n2,int16_t n3) {
+        return distance(n1)+distance(n2)+distance(n3)
+        -C[n1][_nodes[n2]._out]
+        -C[n3][n2]
+        -C[_nodes[n1]._out][_nodes[n3]._out];
+    }
+    void swap2(int16_t n1,int16_t n2) {
+        int16_t n1out = _nodes[n1]._out;
+        int16_t n2out = _nodes[n2]._out;
+        reverse(n2, n1out, _nodes[n1]._order+1);
+        _nodes[n1]._out = n2; _nodes[n2]._in = n1;
+        _nodes[n1out]._out = n2out; _nodes[n2out]._in = n1out;
+    }
+    void swap3a(int16_t n1,int16_t n2, int16_t n3)  {
+        std::array<int16_t,3> n = {{n1,n2,n3}};
+        std::sort(n.begin(),n.end(),
+                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
+        std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
+        _nodes[n[0]]._out = no[1]; _nodes[no[1]]._in = n[0]; // E1
+        order(no[1], n[2], _nodes[n[0]]._order + 1); // Update Order
+        _nodes[n[2]]._out = no[0]; _nodes[no[0]]._in = n[2]; // E2
+        order(no[0], n[1], _nodes[n[2]]._order + 1); // Update Order
+        _nodes[n[1]]._out = no[2]; _nodes[no[2]]._in = n[1]; // E3
+    }
+    void swap3b(int16_t n1,int16_t n2, int16_t n3)  {
+        std::array<int16_t,3> n = {{n1,n2,n3}};
+        std::sort(n.begin(),n.end(),
+                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
+        std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
+        _nodes[n[0]]._out = no[1]; _nodes[no[1]]._in = n[0]; // E1
+        order(no[1], n[2], _nodes[n[0]]._order + 1); // Update Order
+        reverse(n[1], no[0], _nodes[n[2]]._order+1); // Reverse Edge
+        _nodes[n[2]]._out = n[1]; _nodes[n[1]]._in = n[2]; // E2
+        _nodes[no[0]]._out = no[2]; _nodes[no[2]]._in = no[0]; // E3
+    }
+    void print() {
+        int16_t i = 0;
+        do {
+            std::cout << i << std::endl;
+            i = _nodes[i]._out;
+        } while (i != 0);
+    }
+    inline int64_t twoOpt(int16_t n1,int16_t n2) {
+        if (n1 == _nodes[n2]._in || n1 == n2 || n1 == _nodes[n2]._in) return 0;
+        int ret = optGain2(n1, n2);
+        if (ret <= 0)
+            return 0;
+        swap2(n1,n2);
+        return ret;
+    }
+    inline int64_t threeOpt(int16_t n1,int16_t n2,int16_t n3) {
+        if (n1 == _nodes[n2]._in || n1 == n2 || n1 == _nodes[n2]._in) return 0;
+        if (n1 == _nodes[n3]._in || n1 == n3 || n1 == _nodes[n3]._in) return 0;
+        if (n2 == _nodes[n3]._in || n2 == n3 || n2 == _nodes[n3]._in) return 0;
+        int ret;
+        ret = optGain3a(n1, n2, n3);
+        if (ret > 0) {
+            swap3a(n1, n2, n3);
+            return ret;
+        }
+        ret = optGain3b(n1, n2, n3);
+        if (ret > 0) {
+            swap3b(n1, n2, n3);
+            return ret;
+        }
+        return 0;
+    }
+};
+
+struct graph_t {
+    std::vector<std::set<edge_t>> _edges;
+    int16_t _n;
+    graph_t(int16_t n = 0) : _n(n), _edges(std::vector<std::set<edge_t>>(n)) {}
+    void add_edge(edge_t e) {
+        _edges[e._n1].insert(e);
+        _edges[e._n2].insert(e);
+    }
+    void remove_edge(edge_t e) {
+        _edges[e._n1].erase(e);
+        _edges[e._n2].erase(e);
+    }
+    int16_t degree(int16_t n) {
+        return _edges[n].size();
+    }
+    int16_t end(int16_t i) {
+        int16_t n = (*_edges[i].begin()).other(i);
+        while (degree(n) == 2) {
+            std::array<int16_t, 2> neig;
+            size_t j = 0;
+            for (auto &e : _edges[n]) {
+                neig[j++] = e.other(n);
+            }
+            if (neig[0] == i) {
+                i = n;
+                n = neig[1];
+            } else {
+                i = n;
+                n = neig[0];
+            }
+        }
+        return n;
+    }
+    cycle_t cycle() {
+        cycle_t ret(_n);
+        int16_t p = -1, i = 0;
+        do {
+            assert(degree(i) == 2);
+            std::array<int16_t, 2> neig;
+            size_t j = 0;
+            for (auto &e : _edges[i]) {
+                neig[j++] = e.other(i);
+            }
+            if (neig[0] == p) {
+                p = i;
+                i = neig[1];
+            } else {
+                p = i;
+                i = neig[0];
+            }
+            ret._nodes[p]._out = i;
+            ret._nodes[i]._in = p;
+        } while (i != 0);
+        ret.fixOrder();
+        return ret;
+    }
+};
+
+cycle_t Cyc;
 
 auto Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
 
