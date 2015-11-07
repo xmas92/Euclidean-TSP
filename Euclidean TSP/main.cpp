@@ -177,8 +177,9 @@ struct graph_t {
     int16_t _n;
     graph_t(int16_t n = 0) : _n(n), _edges(std::vector<std::set<edge_t>>(n)) {}
     void add_edge(edge_t e) {
-        _edges[e._n1].insert(e);
-        _edges[e._n2].insert(e);
+        auto a = _edges[e._n1].insert(e);
+        auto b = _edges[e._n2].insert(e);
+        assert(a.second == b.second);
     }
     void remove_edge(edge_t e) {
         _edges[e._n1].erase(e);
@@ -355,7 +356,8 @@ bool ThreeOpt(int16_t s1, int16_t s2) {
 void LocalCycOpt() {
     int64_t change = 0;
     int16_t s1 = 0, s2 = 0;
-    while ((Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+    int64_t counter = 0;
+    while ((counter++ % (int)1e6 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
         change += Cyc.twoOpt(s1, s2++);
         if (s2 == N) {
             s1++;
@@ -497,8 +499,6 @@ int main(int argc, const char * argv[]) {
     //ReadInput();
     //Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
     CalculateC();
-    GreedyTour();
-    std::cout << Cyc.distance() << std::endl;
     NNTour();
     std::cout << Cyc.distance() << std::endl;
     GreedyTour();
