@@ -35,7 +35,11 @@ inline bool operator==(const edge_t& lhs, const edge_t& rhs){
     return (lhs._n1 == rhs._n1 && lhs._n2 == rhs._n2);
 }
 inline bool operator!=(const edge_t& lhs, const edge_t& rhs){return !(lhs == rhs);}
-inline bool operator<(const edge_t& lhs, const edge_t& rhs){return lhs._n1 < rhs._n1;}
+inline bool operator<(const edge_t& lhs, const edge_t& rhs){
+    if (lhs._n1 == rhs._n1)
+        return lhs._n2 < rhs._n2;
+    return lhs._n1 < rhs._n1;
+}
 
 std::ostream& operator<<(std::ostream& os, const edge_t& e) {
     os << "(" << e._n1 << "--" << e._n2 << ")";
@@ -87,6 +91,7 @@ struct cycle_t {
             _nodes[from].swap(order++ % _n);
             from = _nodes[from]._out;
         }
+        _nodes[from].swap(order++ % _n);
     }
     int32_t optGain2(int16_t n1,int16_t n2) {
         return distance(n1)+distance(n2)-C[n1][n2]-C[_nodes[n1]._out][_nodes[n2]._out];
@@ -477,7 +482,7 @@ void RandomInput() {
     for (int i = 0; i < N; i++) {
         float x,y;
         std::random_device rd;
-        std::uniform_int_distribution<float> dist(.0f, 10e6);
+        std::uniform_int_distribution<float> dist(.0f, 1e6);
         x = dist(rd);
         y = dist(rd);
         V.push_back(std::make_pair(x, y));
@@ -492,6 +497,8 @@ int main(int argc, const char * argv[]) {
     GreedyTour();
     std::cout << Cyc.distance() << std::endl;
     NNTour();
+    std::cout << Cyc.distance() << std::endl;
+    GreedyTour();
     std::cout << Cyc.distance() << std::endl;
     LocalCycOpt();
     std::cout << Cyc.distance() << std::endl;
