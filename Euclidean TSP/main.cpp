@@ -47,6 +47,12 @@ std::ostream& operator<<(std::ostream& os, const edge_t& e) {
     return os;
 }
 
+
+std::ostream& operator<<(std::ostream& os, const std::array<int16_t,3>& n) {
+    os << "{" << n[0] << "," << n[1] << ","<< n[2] << ")";
+    return os;
+}
+
 struct node_t {
     int16_t _in, _out, _order;
     node_t(int16_t in = -1, int16_t out = -1, int16_t order = -1)
@@ -147,6 +153,7 @@ struct cycle_t {
         if (ret <= 0)
             return 0;
         swap2(n1,n2);
+        //std::cout << "{" << n1 << "," << n2 << "}" << std::endl;
         return ret;
     }
     inline int64_t threeOpt(int16_t n1,int16_t n2,int16_t n3) {
@@ -161,12 +168,14 @@ struct cycle_t {
         ret = optGain3a(n, no);
         if (ret > 0) {
             swap3a(n, no);
+            std::cout << n << " : " << ret << std::endl;
             return ret;
         }
         for (int i = 0; i < 3; i++) {
             ret = optGain3b(n,no);
             if (ret > 0) {
                 swap3b(n,no);
+                std::cout << n << " : " << ret << std::endl;
                 return ret;
             }
             std::rotate(n.begin(), n.begin()+1, n.end());
