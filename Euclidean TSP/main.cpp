@@ -97,17 +97,17 @@ struct cycle_t {
     int32_t optGain2(int16_t n1,int16_t n2) {
         return distance(n1)+distance(n2)-C[n1][n2]-C[_nodes[n1]._out][_nodes[n2]._out];
     }
-    int32_t optGain3a(int16_t n1,int16_t n2,int16_t n3) {
-        return distance(n1)+distance(n2)+distance(n3)
-        -C[n1][_nodes[n2]._out]
-        -C[n3][_nodes[n1]._out]
-        -C[n2][_nodes[n3]._out];
+    int32_t optGain3a(std::array<int16_t,3> n, std::array<int16_t,3> no) {
+        return distance(n[0])+distance(n[1])+distance(n[2])
+        -C[n[0]][no[1]]
+        -C[n[2]][no[0]]
+        -C[n[1]][no[2]];
     }
-    int32_t optGain3b(int16_t n1,int16_t n2,int16_t n3) {
-        return distance(n1)+distance(n2)+distance(n3)
-        -C[n1][_nodes[n2]._out]
-        -C[n3][n2]
-        -C[_nodes[n1]._out][_nodes[n3]._out];
+    int32_t optGain3b(std::array<int16_t,3> n, std::array<int16_t,3> no) {
+        return distance(n[0])+distance(n[1])+distance(n[2])
+        -C[n[0]][no[1]]
+        -C[n[2]][n[1]]
+        -C[no[0]][no[2]];
     }
     void swap2(int16_t n1,int16_t n2) {
         int16_t n1out = _nodes[n1]._out;
@@ -120,22 +120,14 @@ struct cycle_t {
         _nodes[n1]._out = n2; _nodes[n2]._in = n1;
         _nodes[n1out]._out = n2out; _nodes[n2out]._in = n1out;
     }
-    void swap3a(int16_t n1,int16_t n2, int16_t n3)  {
-        std::array<int16_t,3> n = {{n1,n2,n3}};
-        std::sort(n.begin(),n.end(),
-                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
-        std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
+    void swap3a(std::array<int16_t,3> n, std::array<int16_t,3> no)  {
         _nodes[n[0]]._out = no[1]; _nodes[no[1]]._in = n[0]; // E1
         order(no[1], n[2], _nodes[n[0]]._order + 1); // Update Order
         _nodes[n[2]]._out = no[0]; _nodes[no[0]]._in = n[2]; // E2
         order(no[0], n[1], _nodes[n[2]]._order + 1); // Update Order
         _nodes[n[1]]._out = no[2]; _nodes[no[2]]._in = n[1]; // E3
     }
-    void swap3b(int16_t n1,int16_t n2, int16_t n3)  {
-        std::array<int16_t,3> n = {{n1,n2,n3}};
-        std::sort(n.begin(),n.end(),
-                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
-        std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
+    void swap3b(std::array<int16_t,3> n, std::array<int16_t,3> no)  {
         _nodes[n[0]]._out = no[1]; _nodes[no[1]]._in = n[0]; // E1
         order(no[1], n[2], _nodes[n[0]]._order + 1); // Update Order
         reverse(n[1], no[0], _nodes[n[2]]._order+1); // Reverse Edge
@@ -162,15 +154,23 @@ struct cycle_t {
         if (n1 == _nodes[n3]._in || n1 == n3 || n1 == _nodes[n3]._in) return 0;
         if (n2 == _nodes[n3]._in || n2 == n3 || n2 == _nodes[n3]._in) return 0;
         int ret;
-        ret = optGain3a(n1, n2, n3);
+        std::array<int16_t,3> n = {{n1,n2,n3}};
+        std::sort(n.begin(),n.end(),
+                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
+        std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
+        ret = optGain3a(n, no);
         if (ret > 0) {
-            swap3a(n1, n2, n3);
+            swap3a(n, no);
             return ret;
         }
-        ret = optGain3b(n1, n2, n3);
-        if (ret > 0) {
-            swap3b(n1, n2, n3);
-            return ret;
+        for (int i = 0; i < 3; i++) {
+            ret = optGain3b(n,no);
+            if (ret > 0) {
+                swap3b(n,no);
+                return ret;
+            }
+            std::rotate(n.begin(), n.begin()+1, n.end());
+            std::rotate(no.begin(), no.begin()+1, no.end());
         }
         return 0;
     }
@@ -364,6 +364,30 @@ void LocalCycOpt() {
     while ((counter++ % (int)1e6 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
         change += Cyc.twoOpt(s1, s2++);
         if (s2 == N) {
+            s1++;
+            s2 = 0;
+        }
+        if (s1 == N) {
+            if (change == 0) break;
+            change = s1 = 0;
+        }
+    }
+    std::vector<std::vector<bool>> nn(N,std::vector<bool>(N,false));
+    for (int i = 0; i < N; i++) {
+        for (int j = i+1; j < N; j++) {
+            nn[i][j] = nn[j][i] = (C[i][j] < AvrC);
+        }
+    }
+    s1 = 0, s2 = 0;
+    while ((counter++ % (int)1e3 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+        if (nn[s1][s2]) {
+            for (int16_t s3; s3 < N; s3++) {
+                if (nn[s1][s3] && nn[s2][s3]) {
+                    change += Cyc.threeOpt(s1, s2, s3);
+                }
+            }
+        }
+        if (++s2 == N) {
             s1++;
             s2 = 0;
         }
