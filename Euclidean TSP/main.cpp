@@ -22,6 +22,7 @@ std::vector<std::vector<int32_t> > C;
 std::vector<std::pair<float,float> > V;
 std::vector<int16_t> T;
 int16_t N;
+int32_t AvrC;
 
 struct edge_t {
     int16_t _n1, _n2;
@@ -258,12 +259,14 @@ void ReadInput() {
 }
 
 void CalculateC() {
+    int64_t t = 0;
     for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            C[i][j] = std::round(std::sqrt(std::pow(V[i].first-V[j].first, 2)
+        for (int j = i+1; j < N; j++) {
+            t += C[j][i] = C[i][j] = std::round(std::sqrt(std::pow(V[i].first-V[j].first, 2)
                                            + std::pow(V[i].second-V[j].second, 2)));
         }
     }
+    AvrC = static_cast<int32_t>(t/(N*(N-1)/2));
 }
 
 void WriteOutput() {
