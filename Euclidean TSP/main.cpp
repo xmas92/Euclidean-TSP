@@ -344,6 +344,22 @@ bool ThreeOpt(int16_t s1, int16_t s2) {
     return false;
 }
 
+void LocalCycOpt() {
+    int64_t change = 0;
+    int16_t s1 = 0, s2 = 0;
+    while ((Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+        change += Cyc.twoOpt(s1, s2++);
+        if (s2 == N) {
+            s1++;
+            s2 = 0;
+        }
+        if (s1 == N) {
+            if (change == 0) break;
+            change = s1 = 0;
+        }
+    }
+}
+
 void LocalOpt() {
     int16_t s1 = 0, s2 = 0;
     int64_t change = 0;
@@ -369,7 +385,66 @@ void LocalOpt() {
             s2 = T[T[s1]];
         }
     }
-    
+}
+
+void GreedyTour() {
+    graph_t Graph(N);
+    std::list<edge_t> edges;
+    for (int i = 0; i < N; i++) {
+        for (int j = i+1; j < N; j++) {
+            edges.push_back(edge_t(i,j));
+        }
+    }
+    edges.sort([&](const edge_t &a, const edge_t &b){ return C[a._n1][a._n2] < C[b._n1][b._n2];});
+    int16_t n = 0;
+    while (n != N-1) {
+        edge_t e = edges.front();
+        edges.pop_front();
+        if ((Graph.degree(e._n1) < 2 && Graph.degree(e._n2) == 0) ||
+            (Graph.degree(e._n2) < 2 && Graph.degree(e._n1) == 0)) {
+            Graph.add_edge(e);
+            n++;
+        }
+        else if (Graph.degree(e._n1) == 1 &&
+                 Graph.degree(e._n2) == 1 &&
+                 Graph.end(e._n1) != e._n2) {
+            Graph.add_edge(e);
+            n++;
+        }
+    }
+    int i = 0;
+    while (Graph.degree(i) == 2) {i++;}
+    int j = i+1;
+    while (Graph.degree(j) == 2) {j++;}
+    Graph.add_edge(edge_t(i,j));
+    Cyc = Graph.cycle();
+}
+
+void NNTour() {
+    int16_t c = 0;
+    Cyc = cycle_t(N);
+    std::vector<bool> visited(N, false);
+    for(;;) {
+        visited[c] = true;
+        int32_t minC = std::numeric_limits<int32_t>::max();
+        int16_t minV = -1;
+        for (int16_t i = 1; i < N; i++) {
+            if (visited[i]) continue;
+            if (C[c][i] < minC) {
+                minC = C[c][i];
+                minV = i;
+            }
+        }
+        if (minV == -1) {
+            Cyc._nodes[c]._out = 0;
+            Cyc._nodes[0]._in = c;
+            break;
+        }
+        Cyc._nodes[c]._out = minV;
+        Cyc._nodes[minV]._in = c;
+        c = minV;
+    }
+    Cyc.fixOrder();
 }
 
 void InitialTour() {
@@ -414,9 +489,11 @@ int main(int argc, const char * argv[]) {
     //ReadInput();
     //Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
     CalculateC();
-    InitialTour();
-    std::cout << Distance() << std::endl;
-    LocalOpt();
-    std::cout << Distance() << std::endl;
-    WriteOutput();
+    GreedyTour();
+    std::cout << Cyc.distance() << std::endl;
+    NNTour();
+    std::cout << Cyc.distance() << std::endl;
+    LocalCycOpt();
+    std::cout << Cyc.distance() << std::endl;
+    Cyc.print();
 }
