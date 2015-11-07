@@ -83,64 +83,6 @@ bool IsTour() {
     return t==N;
 }
 
-std::pair<int16_t, int16_t> Edge(int16_t x, int16_t y){
-    if (x < y)
-        return std::make_pair(x, y);
-    return std::make_pair(y, x);
-}
-
-void LKOpt(int16_t s) {
-    std::set<std::pair<int16_t, int16_t>> X, Y;
-    std::vector<int16_t> optT(T);
-    int32_t GOpt = 0;
-    int32_t G = 0;
-    int32_t g;
-    int32_t gOpt;
-    int16_t ln = s;
-    int16_t f = T[ln];
-    int16_t n, nf;
-    int16_t lpn = -1;
-    std::pair<int16_t, int16_t> x;
-    int32_t yOptC;
-    int32_t xC;
-    do {
-        n = -1;
-        x = Edge(ln, f);
-        xC = C[ln][f];
-        if (X.count(x) != 0) break;
-        for (int16_t pn = T[f]; n == -1 && pn != s; pn = T[pn]) {
-            g = xC - C[f][pn];
-            if (!(X.count(Edge(f,pn))==0 &&
-                  G+g > 0 &&
-                  Y.count(Edge(lpn, pn))==0&&
-                  T[pn] != 0 &&
-                  pn != T[f])) {
-                lpn = pn;
-                continue;
-            }
-            n = pn;
-        }
-        if (n != -1) {
-            X.insert(x);
-            Y.insert(Edge(f, n));
-            yOptC = C[f][s];
-            gOpt = G + (xC - yOptC);
-            if (gOpt > GOpt) {
-                GOpt = gOpt;
-                optT = T;
-                optT[s] = f;
-            }
-            G += xC - C[f][n];
-            ReverseTour(f, lpn);
-            nf = lpn;
-            T[f] = n;
-            ln = n;
-            f = nf;
-        }
-    } while (n != -1);
-    T = optT;
-}
-
 int64_t TwoOpt(int16_t s) {
     int64_t change = 0;
     int16_t o = -1;
