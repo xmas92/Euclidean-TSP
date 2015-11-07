@@ -112,6 +112,10 @@ struct cycle_t {
     void swap2(int16_t n1,int16_t n2) {
         int16_t n1out = _nodes[n1]._out;
         int16_t n2out = _nodes[n2]._out;
+        if ((_n-_nodes[n1out]._order+_nodes[n2]._order)%_n > _n/2) {
+            std::swap(n1, n2);
+            std::swap(n1out, n2out);
+        }
         reverse(n2, n1out, _nodes[n1]._order+1);
         _nodes[n1]._out = n2; _nodes[n2]._in = n1;
         _nodes[n1out]._out = n2out; _nodes[n2out]._in = n1out;
