@@ -390,7 +390,7 @@ void LocalCycOpt() {
     s1 = 0, s2 = 0;
     while ((counter++ % (int)1e3 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
         if (nn[s1][s2]) {
-            for (int16_t s3; s3 < N; s3++) {
+            for (int16_t s3 = 0; s3 < N; s3++) {
                 if (nn[s1][s3] && nn[s2][s3]) {
                     change += Cyc.threeOpt(s1, s2, s3);
                 }
