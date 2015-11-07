@@ -485,6 +485,52 @@ void NNTour() {
     Cyc.fixOrder();
 }
 
+void CWTour() {
+    graph_t Graph(N);
+    int16_t h = -1;
+    int64_t minAC = std::numeric_limits<int64_t>::max();
+    for (int i = 0; i < N; i++) {
+        int64_t AC = std::accumulate(C[i].begin(), C[i].end(), 0);
+        if (AC < minAC) {
+            h = i;
+            minAC = AC;
+        }
+    }
+    auto savings = [h](const int16_t &i,const int16_t &j)->int32_t {
+        return C[h][i]+C[h][j] - C[i][j];
+    };
+    int16_t Vs = N-1;
+    std::list<edge_t> edges;
+    for (int i = 0; i < N; i++) {
+        for (int j = i+1; j < N; j++) {
+            if (j == h) continue;
+            edges.push_back(edge_t(i,j));
+        }
+    }
+    edges.sort([&](const edge_t &a, const edge_t &b){
+        return savings(a._n1,a._n2) > savings(b._n1,b._n2); });
+    while (Vs > 2) {
+        edge_t e = edges.front();
+        edges.pop_front();
+        if ((Graph.degree(e._n1) < 2 && Graph.degree(e._n2) == 0) ||
+            (Graph.degree(e._n2) < 2 && Graph.degree(e._n1) == 0)) {
+            Graph.add_edge(e);
+            if (Graph.degree(e._n1) == 2 || Graph.degree(e._n2) == 2) Vs--;
+        }
+        else if (Graph.degree(e._n1) == 1 &&
+                 Graph.degree(e._n2) == 1 &&
+                 Graph.end(e._n1) != e._n2) {
+            Graph.add_edge(e);
+            Vs -= 2;
+        }
+    }
+    for (int i = 0; i < N; i++) {
+        if (i == h) continue;
+        if (Graph.degree(i) == 1) Graph.add_edge(edge_t(i,h));
+    }
+    Cyc = Graph.cycle();
+}
+
 void InitialTour() {
     int16_t c = 0;
     std::vector<bool> visited(N, false);
@@ -530,6 +576,8 @@ int main(int argc, const char * argv[]) {
     NNTour();
     std::cout << Cyc.distance() << std::endl;
     GreedyTour();
+    std::cout << Cyc.distance() << std::endl;
+    CWTour();
     std::cout << Cyc.distance() << std::endl;
     LocalCycOpt();
     std::cout << Cyc.distance() << std::endl;
