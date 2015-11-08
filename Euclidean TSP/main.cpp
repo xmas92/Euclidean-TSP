@@ -133,6 +133,8 @@ struct cycle_t {
         _nodes[n[2]]._out = no[0]; _nodes[no[0]]._in = n[2]; // E2
         order(no[0], n[1], _nodes[n[2]]._order + 1); // Update Order
         _nodes[n[1]]._out = no[2]; _nodes[no[2]]._in = n[1]; // E3
+        //fixOrder();
+        //check();
     }
     void swap3b(std::array<int16_t,3> n, std::array<int16_t,3> no)  {
         _nodes[n[0]]._out = no[1]; _nodes[no[1]]._in = n[0]; // E1
@@ -140,6 +142,19 @@ struct cycle_t {
         reverse(n[1], no[0], _nodes[n[2]]._order+1); // Reverse Edge
         _nodes[n[2]]._out = n[1]; _nodes[n[1]]._in = n[2]; // E2
         _nodes[no[0]]._out = no[2]; _nodes[no[2]]._in = no[0]; // E3
+        //fixOrder();
+        //check();
+    }
+    void check() {
+        int16_t i = 0, c = 0;
+        do {
+            c++;
+            assert(_nodes[_nodes[i]._out]._order == (_nodes[i]._order + 1) % _n);
+            assert(i == _nodes[_nodes[i]._out]._in);
+            i = _nodes[i]._out;
+            assert(c <= _n);
+        } while (i != 0);
+        assert(c == _n);
     }
     void print() {
         int16_t i = 0;
@@ -169,14 +184,14 @@ struct cycle_t {
         ret = optGain3a(n, no);
         if (ret > 0) {
             swap3a(n, no);
-            std::cout << n << " : " << ret << std::endl;
+            //std::cout << n << " : " << ret << std::endl;
             return ret;
         }
         for (int i = 0; i < 3; i++) {
             ret = optGain3b(n,no);
             if (ret > 0) {
                 swap3b(n,no);
-                std::cout << n << " : " << ret << std::endl;
+                //std::cout << n << " : " << ret << std::endl;
                 return ret;
             }
             std::rotate(n.begin(), n.begin()+1, n.end());
@@ -592,4 +607,5 @@ int main(int argc, const char * argv[]) {
     LocalCycOpt();
     std::cout << Cyc.distance() << std::endl;
     Cyc.print();
+    std::cout << (Deadline-std::chrono::system_clock::now()).count() << std::endl;
 }
