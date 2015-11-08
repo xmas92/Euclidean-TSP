@@ -400,7 +400,7 @@ void LocalCycOpt() {
     std::vector<std::vector<bool>> nn(N,std::vector<bool>(N,false));
     for (int i = 0; i < N; i++) {
         for (int j = i+1; j < N; j++) {
-            nn[i][j] = nn[j][i] = (C[i][j] < AvrC);
+            nn[i][j] = nn[j][i] = (C[i][j] < AvrC*0.25);
         }
     }
     s1 = 0, s2 = 0;
