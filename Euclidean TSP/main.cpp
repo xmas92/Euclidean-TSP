@@ -207,8 +207,8 @@ struct graph_t {
     int16_t _n;
     graph_t(int16_t n = 0) : _n(n), _edges(std::vector<std::set<edge_t>>(n)) {}
     void add_edge(edge_t e) {
-        auto a = _edges[e._n1].insert(e);
-        auto b = _edges[e._n2].insert(e);
+        /*auto a = */_edges[e._n1].insert(e);
+        /*auto b = */_edges[e._n2].insert(e);
         //assert(a.second == b.second);
     }
     void remove_edge(edge_t e) {
