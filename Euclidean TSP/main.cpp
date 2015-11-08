@@ -28,7 +28,7 @@ struct edge_t {
     int16_t _n1, _n2;
     edge_t(int16_t n1, int16_t n2) :_n1((n1<n2)?n1:n2), _n2((n1<n2)?n2:n1) {}
     int16_t other(int16_t o) const {
-        assert(_n1==o || _n2 == o);
+        //assert(_n1==o || _n2 == o);
         return (_n1 == o)?_n2:_n1;
     }
 };
@@ -208,7 +208,7 @@ struct graph_t {
     void add_edge(edge_t e) {
         auto a = _edges[e._n1].insert(e);
         auto b = _edges[e._n2].insert(e);
-        assert(a.second == b.second);
+        //assert(a.second == b.second);
     }
     void remove_edge(edge_t e) {
         _edges[e._n1].erase(e);
@@ -239,7 +239,7 @@ struct graph_t {
         cycle_t ret(_n);
         int16_t p = -1, i = 0;
         do {
-            assert(degree(i) == 2);
+            //assert(degree(i) == 2);
             std::array<int16_t, 2> neig;
             size_t j = 0;
             for (auto &e : _edges[i]) {
