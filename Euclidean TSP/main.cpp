@@ -92,6 +92,7 @@ struct cycle_t {
             _nodes[from]._order = (order++ % _n);
             from = _nodes[from]._out;
         }
+        _nodes[from]._order = (order++ % _n);
     }
     void reverse(int16_t from, int16_t to, int16_t order) {
         while (from != to) {
