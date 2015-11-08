@@ -386,7 +386,7 @@ void LocalCycOpt() {
     int64_t change = 0;
     int16_t s1 = 0, s2 = 0;
     int64_t counter = 0;
-    while ((counter++ % (int)1e6 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+    while ((counter++ % (int)N != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
         change += Cyc.twoOpt(s1, s2++);
         if (s2 == N) {
             s1++;
@@ -404,11 +404,15 @@ void LocalCycOpt() {
         }
     }
     s1 = 0, s2 = 0;
-    while ((counter++ % (int)1e3 != 0) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+    while ((counter < (int)N) || (Deadline-std::chrono::system_clock::now()) > std::chrono::milliseconds(100)) {
+        if ((counter >= (int)N)) {
+            counter = 0;
+        }
         if (nn[s1][s2]) {
             for (int16_t s3 = 0; s3 < N; s3++) {
                 if (nn[s1][s3] && nn[s2][s3]) {
                     change += Cyc.threeOpt(s1, s2, s3);
+                    counter++;
                 }
             }
         }
@@ -580,7 +584,7 @@ void InitialTour() {
 }
 
 void RandomInput() {
-    N = 200;
+    N = 1000;
     C = std::vector<std::vector<int32_t>>(N,std::vector<int32_t>(N,0));
     T = std::vector<int16_t>(N,-1);
     for (int i = 0; i < N; i++) {
@@ -598,14 +602,21 @@ int main(int argc, const char * argv[]) {
     //ReadInput();
     //Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
     CalculateC();
+    Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
     NNTour();
-    std::cout << Cyc.distance() << std::endl;
-    GreedyTour();
-    std::cout << Cyc.distance() << std::endl;
-    CWTour();
-    std::cout << Cyc.distance() << std::endl;
+    std::cout << "NNeigh: " << Cyc.distance() << std::endl;
     LocalCycOpt();
-    std::cout << Cyc.distance() << std::endl;
-    Cyc.print();
-    std::cout << (Deadline-std::chrono::system_clock::now()).count() << std::endl;
+    std::cout << "locOpt: " << Cyc.distance() << std::endl;
+    Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
+    GreedyTour();
+    std::cout << "Greedy: " << Cyc.distance() << std::endl;
+    LocalCycOpt();
+    std::cout << "locOpt: " << Cyc.distance() << std::endl;
+    Deadline = std::chrono::system_clock::now()+std::chrono::seconds(2);
+    CWTour();
+    std::cout << "CWrigh: " << Cyc.distance() << std::endl;
+    LocalCycOpt();
+    std::cout << "locOpt: " << Cyc.distance() << std::endl;
+    //Cyc.print();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(Deadline-std::chrono::system_clock::now()).count() << "ms" << std::endl;
 }
