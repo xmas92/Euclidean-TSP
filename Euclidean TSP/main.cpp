@@ -14,6 +14,7 @@
 #include <cmath>
 #include <limits>
 #include <chrono>
+#include <algorithm>
 #include <set>
 #include <cassert>
 #include <random>
@@ -179,7 +180,7 @@ struct cycle_t {
         int ret;
         std::array<int16_t,3> n = {{n1,n2,n3}};
         std::sort(n.begin(),n.end(),
-                  [&](int16_t &a, int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
+                  [&](const int16_t &a,const int16_t &b) { return _nodes[a]._order < _nodes[b]._order; });
         std::array<int16_t,3> no = {{_nodes[n[0]]._out,_nodes[n[1]]._out,_nodes[n[2]]._out}};
         ret = optGain3a(n, no);
         if (ret > 0) {
